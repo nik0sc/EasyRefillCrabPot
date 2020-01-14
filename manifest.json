@@ -1,0 +1,10 @@
+﻿{
+  "Name": "Easy Refill Crab Pots",
+  "Author": "nik0sc",
+  "Version": "1.0.0",
+  "Description": "Bait crab pots without needing to remove bait from your fishing rod",
+  "UniqueID": "nik0sc.EasyRefillCrabPot",
+  "EntryDll": "EasyRefillCrabPot.dll",
+  "MinimumApiVersion": "3.1.0",
+  "UpdateKeys": []
+}
