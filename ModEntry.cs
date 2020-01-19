@@ -49,11 +49,11 @@ namespace EasyRefillCrabPot
         // Why in the world did ConcernedApe name the base SV object "Object"?? The mind boggles
         private static readonly int BaitCategory = StardewValley.Object.baitCategory;
 
-        public static bool checkForAction_prefix(Farmer who, ref CrabPot __instance, bool justCheckingForActivity = false)
+        public static bool checkForAction_prefix(Farmer who, ref CrabPot __instance, ref bool __result, bool justCheckingForActivity = false)
         {
             if (justCheckingForActivity)
                 return true;
-
+            
             if (!__instance.readyForHarvest.Value && __instance.bait.Value == null && !who.professions.Contains(Farmer.baitmaster))
             {
                 // Nothing to harvest and no bait, not luremaster
@@ -118,7 +118,18 @@ namespace EasyRefillCrabPot
         {
             // when pickaxe used on placed crab pot with no bait or catch, and the inventory can accept a crab pot, the crab pot is 
             // automatically moved to the inventory (not dropped into the environment then picked up by player)
-            return false;
+            if (t is Pickaxe && !__instance.readyForHarvest)
+            {
+                if (__instance.bait.Value != null)
+                {
+                    // Restore bait to stack or rod (inverse of improved baiting action)
+
+
+                }
+                return false;
+            }
+
+            return true;
         }
     }
 }
