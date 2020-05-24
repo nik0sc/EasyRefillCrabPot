@@ -116,19 +116,85 @@ namespace EasyRefillCrabPot
 
         public static bool performToolAction_prefix(Tool t, GameLocation location, ref CrabPot __instance)
         {
-            // when pickaxe used on placed crab pot with no bait or catch, and the inventory can accept a crab pot, the crab pot is 
-            // automatically moved to the inventory (not dropped into the environment then picked up by player)
+            // when pickaxe used on placed crab pot with no catch, and the inventory can accept a crab pot, the crab pot is 
+            // automatically moved to the inventory (not dropped into the environment then picked up by player) and the bait is 
+            // added back into the inventory (either a bait stack in rod or inventory)
             if (t is Pickaxe && !__instance.readyForHarvest)
             {
+                Farmer who = Game1.player;
+                bool baitRemoved = false;
+
                 if (__instance.bait.Value != null)
                 {
-                    // Restore bait to stack or rod (inverse of improved baiting action)
 
+                    // Restore bait to stack or rod (inverse of improved baiting action)
+                    // Prefer adding to the rod
+                    Item baitInPot = __instance.bait.Value;
+                    string baitName = baitInPot.Name;
+                    foreach (FishingRod rod in who.items.Where(item => item is FishingRod && item.attachmentSlots() > 0))
+                    {
+                        Item baitSlot = rod.attachments[0] ?? new StardewValley.Object();
+                        // TODO: make the bait from crab pot add to the fishing rod bait slot even if it is empty 
+                        if (baitSlot.Category == BaitCategory && baitSlot.Stack > 0 && baitSlot.Name == baitInPot.Name)
+                        {
+                            __instance.bait.Value = null;
+                            baitSlot.Stack++;
+                            ModEntry.EMonitor?.Log($"Added {baitName} to rod {rod.Name}");
+                            baitRemoved = true;
+                            break;
+                        }
+                    }
+
+                    if (!baitRemoved)
+                    {
+                        // Didn't find a suitable rod
+                        if (who.addItemToInventoryBool(baitInPot))
+                        {
+                            __instance.bait.Value = null;
+                            baitRemoved = true;
+                            ModEntry.EMonitor?.Log($"Added {baitName} to inventory");
+                        }
+                        else
+                        {
+                            //who.dropItem(__instance.bait.Value);
+                            //__instance.bait.Value = null;
+                            //ModEntry.EMonitor?.Log($"Dropping {baitName} at player's feet");
+                            ModEntry.EMonitor?.Log($"No space for {baitName}");
+                            Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:Crop.cs.588"));
+                            return false;
+                        }
+                    }
 
                 }
+
+                if (baitRemoved)
+                {
+                    Game1.playSound("coin");
+                }
+
+                if (who.addItemToInventoryBool(__instance.getOne(), false))
+                {
+                    // ripped from CrabPot::checkForAction
+                    if (who.isMoving())
+                    {
+                        Game1.haltAfterCheck = false;
+                    }
+                    if (!baitRemoved)
+                    {
+                        // play sound if no bait removed but the pot was removed
+                        Game1.playSound("coin");
+                    }
+                    Game1.currentLocation.objects.Remove(__instance.tileLocation);
+                }
+                else
+                {
+                    Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:Crop.cs.588"));
+                }
+            
                 return false;
             }
 
+            // Some other tool, let base Object handle it
             return true;
         }
     }
